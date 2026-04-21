@@ -105,6 +105,7 @@
         <button id="btn1" class="btn active" onclick="selectModel(1)"></button>
         <button id="btn2" class="btn" onclick="selectModel(2)"></button>
         <button id="btn3" class="btn" onclick="selectModel(3)"></button>
+        <button id="btn4" class="btn" onclick="selectModel(4)"></button>
     </div>
     
     <div id="info-box">Sayfa Yüklendi. Önizlemedesiniz. AR için sağ alt butona basın.</div>
@@ -115,18 +116,21 @@
         ar-hit-test-custom>
         
         <a-assets>
-            <a-asset-item id="glbModel" src="https://cdn.jsdelivr.net/gh/dekoratordt-byte/cokluar@main/model.glb"></a-asset-item>
+            <a-asset-item id="glbModel" src="https://cdn.jsdelivr.net/gh/dekoratordt-byte/cs@main/model.glb"></a-asset-item>
         </a-assets>
 
 <a-assets>
-            <a-asset-item id="glbModel1" src="https://cdn.jsdelivr.net/gh/dekoratordt-byte/cokluar@main/model2.glb"></a-asset-item>
+            <a-asset-item id="glbModel1" src="https://cdn.jsdelivr.net/gh/dekoratordt-byte/cs@main/model2.glb"></a-asset-item>
         </a-assets>
 
 
         <a-assets>
-            <a-asset-item id="glbModel2" src="https://cdn.jsdelivr.net/gh/dekoratordt-byte/cokluar@main/model1.glb"></a-asset-item>
+            <a-asset-item id="glbModel2" src="https://cdn.jsdelivr.net/gh/dekoratordt-byte/cs@main/model1.glb"></a-asset-item>
         </a-assets>
 
+          <a-assets>
+            <a-asset-item id="glbModel3" src="https://cdn.jsdelivr.net/gh/dekoratordt-byte/cs@main/model3.glb"></a-asset-item>
+        </a-assets>
         
         <a-entity camera look-controls position="0 1.6 0"></a-entity>
 
@@ -136,7 +140,7 @@
         <a-entity id="model1" gltf-model="#glbModel" mobile-lit-model visible="false" scale="0.3 0.3 0.3"></a-entity>
         <a-entity id="model2" gltf-model="#glbModel2" mobile-lit-model visible="false" scale="0.3 0.3 0.3"></a-entity>
         <a-entity id="model3" gltf-model="#glbModel1" mobile-lit-model visible="false" scale="0.3 0.3 0.3"></a-entity>
-
+        <a-entity id="model4" gltf-model="#glbModel3" mobile-lit-model visible="false" scale="0.3 0.3 0.3"></a-entity>
         <a-entity id="reticle" visible="false">
             <a-ring color="#000000" radius-inner="0.08" radius-outer="0.12" rotation="-90 0 0"></a-ring>
         </a-entity>
