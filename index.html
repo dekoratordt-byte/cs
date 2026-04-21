@@ -1,0 +1,289 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <title>HY AR - Önizlemeli Çoklu Model</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #f0f0f0; }
+
+        /* Arayüz Konteynırı */
+        #ui-overlay {
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-end; 
+            padding-bottom: 40px; 
+            box-sizing: border-box;
+            gap: 15px; 
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        /* Butonlar */
+        .btn {
+            background: #ffffff; 
+            border: 2px solid #000000; 
+            width: 35px; 
+            height: 35px;
+            border-radius: 50%; 
+            padding: 0; 
+            cursor: pointer;
+            pointer-events: auto; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            flex: 0 0 auto;
+            transition: all 0.2s ease;
+            user-select: none; 
+            -webkit-user-select: none;
+        }
+
+        .btn.active {
+            background: #000000;
+            transform: scale(1.15); 
+        }
+
+        /* Bilgi Paneli */
+        #info-box {
+            position: fixed;
+            top: 40px;
+            padding-top: env(safe-area-inset-top);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.75);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-family: sans-serif;
+            text-align: center;
+            z-index: 9999;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+    </style>
+
+    <script>
+        // Modeli mobil cihazları yormayacak şekilde (Lambert) boyutlandıran özel bileşen
+        AFRAME.registerComponent('mobile-lit-model', {
+            init: function () {
+                this.el.addEventListener('model-loaded', () => {
+                    const obj = this.el.getObject3D('mesh');
+                    if (!obj) return;
+                    
+                    obj.traverse((node) => {
+                        if (node.isMesh && node.material) {
+                            // MeshLambertMaterial: Telefonu yormaz, 3D formu gösterir
+                            const newMat = new THREE.MeshLambertMaterial({
+                                map: node.material.map,
+                                color: node.material.color,
+                                transparent: node.material.transparent,
+                                opacity: node.material.opacity,
+                                alphaTest: node.material.alphaTest
+                            });
+                            node.material.dispose(); 
+                            node.material = newMat;  
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+</head>
+
+<body>
+
+    <div id="ui-overlay">
+        <button id="btn1" class="btn active" onclick="selectModel(1)"></button>
+        <button id="btn2" class="btn" onclick="selectModel(2)"></button>
+        <button id="btn3" class="btn" onclick="selectModel(3)"></button>
+    </div>
+    
+    <div id="info-box">Sayfa Yüklendi. Önizlemedesiniz. AR için sağ alt butona basın.</div>
+
+    <a-scene 
+        webxr="requiredFeatures: hit-test, local-floor; optionalFeatures: dom-overlay; overlayElement: #ui-overlay;"
+        renderer="colorManagement: true; alpha: true; antialias: false;" 
+        ar-hit-test-custom>
+        
+        <a-assets>
+            <a-asset-item id="glbModel" src="https://cdn.jsdelivr.net/gh/dekoratordt-byte/cokluar@main/model.glb"></a-asset-item>
+        </a-assets>
+
+<a-assets>
+            <a-asset-item id="glbModel1" src="https://cdn.jsdelivr.net/gh/dekoratordt-byte/cokluar@main/model2.glb"></a-asset-item>
+        </a-assets>
+
+
+        <a-assets>
+            <a-asset-item id="glbModel2" src="https://cdn.jsdelivr.net/gh/dekoratordt-byte/cokluar@main/model1.glb"></a-asset-item>
+        </a-assets>
+
+        
+        <a-entity camera look-controls position="0 1.6 0"></a-entity>
+
+        <a-light type="ambient" color="#ffffff" intensity="0.5"></a-light>
+        <a-light type="directional" position="1 2 1" color="#ffffff" intensity="0.7"></a-light>
+
+        <a-entity id="model1" gltf-model="#glbModel" mobile-lit-model visible="false" scale="0.3 0.3 0.3"></a-entity>
+        <a-entity id="model2" gltf-model="#glbModel2" mobile-lit-model visible="false" scale="0.3 0.3 0.3"></a-entity>
+        <a-entity id="model3" gltf-model="#glbModel1" mobile-lit-model visible="false" scale="0.3 0.3 0.3"></a-entity>
+
+        <a-entity id="reticle" visible="false">
+            <a-ring color="#000000" radius-inner="0.08" radius-outer="0.12" rotation="-90 0 0"></a-ring>
+        </a-entity>
+
+    </a-scene>
+
+    <script>
+        let selectedModelId = 1;
+        const infoBox = document.getElementById('info-box');
+
+        let touchState = {
+            scaling: false,
+            rotating: false,
+            initialDistance: 0,
+            initialScale: {x: 0.3, y: 0.3, z: 0.3},
+            lastX: 0
+        };
+        
+        let isManipulating = false; 
+
+        window.selectModel = function(id) {
+            selectedModelId = id;
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn' + id).classList.add('active');
+            infoBox.innerText = "Model " + id + " Seçildi. Zemini tarayıp dokunun.";
+        };
+
+        window.addEventListener('touchstart', (e) => {
+            if(e.target.closest('#ui-overlay')) return; 
+
+            const activeModel = document.getElementById('model' + selectedModelId);
+            let isVisible = activeModel.getAttribute('visible');
+            if (!isVisible || isVisible === 'false') return; 
+
+            if (e.touches.length === 2) {
+                touchState.scaling = true;
+                touchState.rotating = false;
+                let dx = e.touches[0].pageX - e.touches[1].pageX;
+                let dy = e.touches[0].pageY - e.touches[1].pageY;
+                touchState.initialDistance = Math.sqrt(dx * dx + dy * dy);
+                touchState.initialScale = { ...activeModel.getAttribute('scale') }; 
+            } else if (e.touches.length === 1) {
+                touchState.rotating = true;
+                touchState.scaling = false;
+                touchState.lastX = e.touches[0].pageX;
+            }
+        }, {passive: false});
+
+        window.addEventListener('touchmove', (e) => {
+            if(e.target.closest('#ui-overlay')) return;
+
+            const activeModel = document.getElementById('model' + selectedModelId);
+            let isVisible = activeModel.getAttribute('visible');
+            if (!isVisible || isVisible === 'false') return;
+
+            if (touchState.scaling && e.touches.length === 2) {
+                isManipulating = true; 
+                let dx = e.touches[0].pageX - e.touches[1].pageX;
+                let dy = e.touches[0].pageY - e.touches[1].pageY;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                let scaleFactor = distance / touchState.initialDistance;
+
+                let newScaleX = touchState.initialScale.x * scaleFactor;
+                let newScaleY = touchState.initialScale.y * scaleFactor;
+                let newScaleZ = touchState.initialScale.z * scaleFactor;
+
+                if(newScaleX > 0.05 && newScaleX < 5.0) {
+                    activeModel.setAttribute('scale', `${newScaleX} ${newScaleY} ${newScaleZ}`);
+                }
+            } else if (touchState.rotating && e.touches.length === 1) {
+                let deltaX = e.touches[0].pageX - touchState.lastX;
+                
+                if (Math.abs(deltaX) > 2) { 
+                    isManipulating = true; 
+                    let currentRot = activeModel.getAttribute('rotation');
+                    activeModel.setAttribute('rotation', `${currentRot.x} ${currentRot.y + deltaX * 0.8} ${currentRot.z}`);
+                    touchState.lastX = e.touches[0].pageX;
+                }
+            }
+        }, {passive: false});
+
+        window.addEventListener('touchend', (e) => {
+            if (e.touches.length < 2) touchState.scaling = false;
+            if (e.touches.length === 0) {
+                touchState.rotating = false;
+                setTimeout(() => { isManipulating = false; }, 100);
+            }
+        });
+
+        AFRAME.registerComponent('ar-hit-test-custom', {
+            init: function () {
+                this.xrHitTestSource = null;
+                this.viewerSpace = null;
+                this.refSpace = null;
+                this.reticle = document.getElementById('reticle');
+
+                this.el.addEventListener('enter-vr', () => {
+                    if (this.el.is('ar-mode')) {
+                        infoBox.innerText = "Kamera açıldı! Zemini tarayın...";
+                        document.body.style.backgroundColor = "transparent";
+                        
+                        let session = this.el.sceneEl.renderer.xr.getSession();
+                        
+                        session.requestReferenceSpace('viewer').then((space) => {
+                            this.viewerSpace = space;
+                            session.requestHitTestSource({ space: this.viewerSpace }).then((source) => {
+                                this.xrHitTestSource = source;
+                            });
+                        });
+
+                        session.requestReferenceSpace('local-floor').then((space) => {
+                            this.refSpace = space;
+                        });
+
+                        session.addEventListener('select', (event) => {
+                            if (isManipulating) return;
+
+                            if (this.reticle.getAttribute('visible')) {
+                                const activeModel = document.getElementById('model' + selectedModelId);
+                                const newPosition = this.reticle.getAttribute('position');
+                                
+                                activeModel.setAttribute('position', newPosition);
+                                activeModel.setAttribute('visible', 'true');
+                                
+                                infoBox.innerText = "Model " + selectedModelId + " başarıyla yerleştirildi.";
+                            }
+                        });
+                    }
+                });
+            },
+            tick: function () {
+                if (!this.el.is('ar-mode') || !this.xrHitTestSource || !this.refSpace) return;
+                
+                let frame = this.el.sceneEl.frame; 
+                if (!frame) return;
+
+                let hitTestResults = frame.getHitTestResults(this.xrHitTestSource);
+                
+                if (hitTestResults.length > 0) {
+                    let pose = hitTestResults[0].getPose(this.refSpace);
+                    this.reticle.setAttribute('position', pose.transform.position);
+                    this.reticle.setAttribute('visible', 'true');
+                } else {
+                    this.reticle.setAttribute('visible', 'false');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
